@@ -2,7 +2,6 @@
 
 An interactive visual guide to the radio spectrum — from 3 Hz to 300 GHz.
 
-**Live demo:** https://radio.az.jen.re
 
 ## Features
 
