@@ -39,4 +39,10 @@ Single `index.html` file. Self-hosted with nginx + Docker + Traefik.
 docker compose up -d
 ```
 
-Then point your reverse proxy to port 80.
+Open http://localhost:8080 — that's it.
+
+Change the port in `docker-compose.yml` if 8080 is already in use.
+
+### With a reverse proxy (Nginx, Traefik, Caddy...)
+
+Remove the `ports` section and point your proxy to the container on port 80.
