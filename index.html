@@ -1,0 +1,1415 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Radio Spectrum Explorer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0f;
+  --bg2: #0f0f1a;
+  --bg3: #14141f;
+  --border: rgba(255,255,255,0.07);
+  --text: #e8e8f0;
+  --muted: #6b6b80;
+  --band-color: #8b5cf6;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Space Grotesk', sans-serif;
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+
+/* ─── HEADER ─── */
+header {
+  text-align: center;
+  padding: 60px 20px 20px;
+  position: relative;
+}
+header h1 {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 700;
+  letter-spacing: -1px;
+  background: linear-gradient(135deg, #a78bfa, #60a5fa, #34d399);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+header p {
+  color: var(--muted);
+  margin-top: 8px;
+  font-size: 1rem;
+  letter-spacing: 0.05em;
+}
+
+/* ─── HERO SLIDER ─── */
+.hero {
+  padding: 40px 20px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.freq-display {
+  text-align: center;
+  margin-bottom: 30px;
+  transition: all 0.3s ease;
+}
+.freq-value {
+  font-family: 'Space Mono', monospace;
+  font-size: clamp(2.5rem, 6vw, 4rem);
+  font-weight: 700;
+  color: var(--band-color);
+  transition: color 0.4s ease;
+  line-height: 1;
+}
+.freq-wavelength {
+  font-family: 'Space Mono', monospace;
+  font-size: 1.1rem;
+  color: var(--muted);
+  margin-top: 6px;
+}
+.band-name {
+  font-size: clamp(1rem, 2.5vw, 1.4rem);
+  font-weight: 600;
+  color: var(--band-color);
+  margin-top: 4px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transition: color 0.4s ease;
+}
+
+/* slider */
+.slider-wrap {
+  position: relative;
+  padding: 10px 0;
+}
+.slider-labels {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--muted);
+  margin-bottom: 8px;
+  padding: 0 2px;
+}
+#freqSlider {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right,
+    #8b5cf6 0%, #6366f1 12%,
+    #3b82f6 25%, #06b6d4 37%,
+    #10b981 50%, #eab308 62%,
+    #f97316 75%, #ef4444 87%, #dc2626 100%);
+  outline: none;
+  cursor: pointer;
+}
+#freqSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: white;
+  border: 3px solid var(--band-color);
+  cursor: pointer;
+  box-shadow: 0 0 0 4px rgba(139,92,246,0.3);
+  transition: border-color 0.4s, box-shadow 0.4s;
+}
+#freqSlider::-moz-range-thumb {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: white;
+  border: 3px solid var(--band-color);
+  cursor: pointer;
+}
+
+/* ─── WAVE CANVAS ─── */
+.wave-section {
+  max-width: 1100px;
+  margin: 0 auto 10px;
+  padding: 0 20px;
+}
+#waveCanvas {
+  width: 100%;
+  height: 160px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg2);
+  display: block;
+}
+.wave-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+  padding: 0 4px;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+/* ─── INFO PANELS ─── */
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  max-width: 1100px;
+  margin: 20px auto;
+  padding: 0 20px;
+}
+@media (max-width: 700px) { .info-grid { grid-template-columns: 1fr; } }
+
+.panel {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  transition: border-color 0.4s;
+}
+.panel h3 {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+
+/* usages */
+.usage-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.usage-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 14px;
+  background: var(--bg3);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  font-size: 0.7rem;
+  color: var(--muted);
+  transition: all 0.3s;
+  min-width: 70px;
+  text-align: center;
+}
+.usage-item svg { width: 28px; height: 28px; }
+.usage-item.active {
+  border-color: var(--band-color);
+  color: var(--text);
+  background: rgba(139,92,246,0.1);
+}
+
+/* badges */
+.badges { display: flex; flex-direction: column; gap: 10px; }
+.badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  border: 1px solid transparent;
+  transition: all 0.4s;
+}
+.badge svg { width: 18px; height: 18px; flex-shrink: 0; }
+.badge.green { background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.3); color: #34d399; }
+.badge.red   { background: rgba(239,68,68,0.1);  border-color: rgba(239,68,68,0.3);  color: #f87171; }
+.badge.blue  { background: rgba(59,130,246,0.1); border-color: rgba(59,130,246,0.3); color: #60a5fa; }
+.badge.yellow{ background: rgba(234,179,8,0.1);  border-color: rgba(234,179,8,0.3);  color: #fbbf24; }
+.badge.muted { background: rgba(107,114,128,0.1);border-color: rgba(107,114,128,0.3);color: #9ca3af; }
+
+/* range bar */
+.range-bar-wrap { margin-top: 12px; }
+.range-bar-label { font-size: 0.7rem; color: var(--muted); margin-bottom: 4px; }
+.range-bar { height: 6px; border-radius: 3px; background: var(--bg3); overflow: hidden; }
+.range-bar-fill { height: 100%; border-radius: 3px; background: var(--band-color); transition: width 0.5s ease, background 0.4s; }
+
+/* fun fact */
+.funfact {
+  max-width: 1100px;
+  margin: 0 auto 10px;
+  padding: 0 20px;
+}
+.funfact-inner {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--band-color);
+  border-radius: 0 12px 12px 0;
+  padding: 14px 18px;
+  font-size: 0.88rem;
+  color: var(--muted);
+  transition: border-color 0.4s, color 0.4s;
+  min-height: 50px;
+}
+.funfact-inner span { color: var(--text); }
+
+/* ─── PROPAGATION ─── */
+.section-title {
+  text-align: center;
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin: 50px 0 24px;
+  letter-spacing: -0.02em;
+}
+.section-title small {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-weight: 400;
+  margin-top: 4px;
+  letter-spacing: 0.05em;
+}
+
+.prop-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  max-width: 1100px;
+  margin: 0 auto 20px;
+  padding: 0 20px;
+}
+@media (max-width: 700px) { .prop-grid { grid-template-columns: 1fr; } }
+
+.prop-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  transition: border-color 0.4s, box-shadow 0.4s;
+}
+.prop-card.active-prop {
+  border-color: var(--band-color);
+  box-shadow: 0 0 20px rgba(139,92,246,0.15);
+}
+.prop-card h4 { font-size: 0.85rem; font-weight: 600; margin-bottom: 4px; }
+.prop-card p { font-size: 0.72rem; color: var(--muted); margin-bottom: 12px; }
+.prop-card svg { width: 100%; height: 120px; }
+
+/* ─── DIFFRACTION ─── */
+.diffraction-section {
+  max-width: 1100px;
+  margin: 0 auto 20px;
+  padding: 0 20px;
+}
+.diff-container {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: center;
+}
+@media (max-width: 700px) { .diff-container { grid-template-columns: 1fr; } }
+#diffCanvas {
+  width: 100%;
+  height: 180px;
+  border-radius: 8px;
+  background: var(--bg3);
+  display: block;
+}
+.diff-info h4 { font-size: 1rem; font-weight: 600; margin-bottom: 8px; color: var(--band-color); transition: color 0.4s; }
+.diff-info p { font-size: 0.82rem; color: var(--muted); line-height: 1.7; }
+.diff-meter { margin-top: 14px; }
+.diff-meter-label { font-size: 0.7rem; color: var(--muted); margin-bottom: 4px; display: flex; justify-content: space-between; }
+.diff-bar { height: 8px; border-radius: 4px; background: var(--bg3); overflow: hidden; }
+.diff-bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease, background 0.4s; }
+
+/* ─── OBSTACLES COMPARATOR ─── */
+.obstacles-section {
+  max-width: 1100px;
+  margin: 0 auto 20px;
+  padding: 0 20px;
+}
+.obstacles-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+@media (max-width: 700px) { .obstacles-grid { grid-template-columns: repeat(2,1fr); } }
+.obstacle-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+}
+.obstacle-card h5 { font-size: 0.75rem; font-weight: 600; margin-bottom: 4px; }
+.obstacle-card .mat-icon { font-size: 1.8rem; margin: 6px 0; }
+.obstacle-db { font-family: 'Space Mono', monospace; font-size: 1.1rem; font-weight: 700; transition: color 0.4s; }
+.obstacle-db-label { font-size: 0.65rem; color: var(--muted); }
+.attn-bar { height: 4px; border-radius: 2px; background: var(--bg3); margin-top: 8px; overflow: hidden; }
+.attn-bar-fill { height: 100%; border-radius: 2px; background: #ef4444; transition: width 0.5s ease; }
+
+/* ─── FULL SPECTRUM BAR ─── */
+.spectrum-bar-section {
+  max-width: 1100px;
+  margin: 40px auto 10px;
+  padding: 0 20px;
+}
+.spectrum-bar-wrap {
+  position: relative;
+  height: 60px;
+  border-radius: 8px;
+  overflow: visible;
+  cursor: pointer;
+}
+.spectrum-bar-bg {
+  width: 100%;
+  height: 40px;
+  border-radius: 8px;
+  background: linear-gradient(to right,
+    #8b5cf6 0%, #6366f1 12%,
+    #3b82f6 25%, #06b6d4 37%,
+    #10b981 50%, #eab308 62%,
+    #f97316 75%, #ef4444 87%, #dc2626 100%);
+  cursor: pointer;
+  position: relative;
+}
+.spectrum-marker {
+  position: absolute;
+  top: -22px;
+  transform: translateX(-50%);
+  font-size: 0.55rem;
+  color: rgba(255,255,255,0.6);
+  white-space: nowrap;
+  text-align: center;
+  pointer-events: none;
+}
+.spectrum-marker::after {
+  content: '';
+  display: block;
+  width: 1px;
+  height: 8px;
+  background: rgba(255,255,255,0.3);
+  margin: 2px auto 0;
+}
+.spectrum-cursor {
+  position: absolute;
+  top: 0;
+  width: 3px;
+  height: 40px;
+  background: white;
+  border-radius: 2px;
+  box-shadow: 0 0 8px rgba(255,255,255,0.8);
+  pointer-events: none;
+  transition: left 0.1s;
+}
+.spectrum-band-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 0.6rem;
+  color: var(--muted);
+  font-family: 'Space Mono', monospace;
+}
+
+/* ─── ACCORDION ─── */
+.accordion-section {
+  max-width: 1100px;
+  margin: 40px auto 60px;
+  padding: 0 20px;
+}
+.accordion-item {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 8px;
+  overflow: hidden;
+  transition: border-color 0.3s;
+}
+.accordion-item.open { border-color: var(--band-color); }
+.accordion-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  cursor: pointer;
+  background: var(--bg2);
+  transition: background 0.2s;
+}
+.accordion-header:hover { background: var(--bg3); }
+.acc-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.acc-name { font-weight: 600; font-size: 0.9rem; }
+.acc-range { font-family: 'Space Mono', monospace; font-size: 0.72rem; color: var(--muted); margin-left: auto; }
+.acc-chevron { color: var(--muted); transition: transform 0.3s; font-size: 0.8rem; }
+.accordion-item.open .acc-chevron { transform: rotate(180deg); }
+.accordion-body {
+  display: none;
+  padding: 16px 18px;
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.8;
+}
+.accordion-item.open .accordion-body { display: block; }
+.acc-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.acc-tag {
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.68rem;
+  font-weight: 500;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+footer {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--muted);
+  font-size: 0.75rem;
+  border-top: 1px solid var(--border);
+}
+footer span { color: var(--text); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Radio Spectrum Explorer</h1>
+  <p>Déplace le curseur pour explorer le spectre — de 3 Hz à 300 GHz</p>
+</header>
+
+<!-- HERO SLIDER -->
+<div class="hero">
+  <div class="freq-display">
+    <div class="freq-value" id="freqVal">98 MHz</div>
+    <div class="freq-wavelength" id="waveVal">λ = 3.06 m</div>
+    <div class="band-name" id="bandName">VHF — Very High Frequency</div>
+  </div>
+  <div class="slider-wrap">
+    <div class="slider-labels">
+      <span>3 Hz</span><span>30 Hz</span><span>300 Hz</span><span>3 kHz</span><span>30 kHz</span><span>300 kHz</span><span>3 MHz</span><span>30 MHz</span><span>300 MHz</span><span>3 GHz</span><span>30 GHz</span><span>300 GHz</span>
+    </div>
+    <input type="range" id="freqSlider" min="0" max="1000" value="617" step="1">
+  </div>
+</div>
+
+<!-- WAVE CANVAS -->
+<div class="wave-section">
+  <canvas id="waveCanvas"></canvas>
+  <div class="wave-meta">
+    <span id="waveMeta1">Longueur d'onde : 3.06 m</span>
+    <span id="waveMeta2">Fréquence : 98 000 000 cycles/sec</span>
+    <span id="waveMeta3">Propagation : Ligne de vue</span>
+  </div>
+</div>
+
+<!-- INFO PANELS -->
+<div class="info-grid">
+  <div class="panel">
+    <h3>Usages</h3>
+    <div class="usage-grid" id="usageGrid"></div>
+  </div>
+  <div class="panel">
+    <h3>Caractéristiques</h3>
+    <div class="badges" id="badgesPanel"></div>
+    <div class="range-bar-wrap">
+      <div class="range-bar-label">Portée relative</div>
+      <div class="range-bar"><div class="range-bar-fill" id="rangeBarFill" style="width:40%"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- BANDWIDTH PANEL -->
+<div class="info-grid" style="margin-top:0">
+  <div class="panel" id="bwPanel" style="grid-column: 1 / -1;">
+    <h3>Bande passante & débit théorique</h3>
+    <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap;">
+      <div style="flex:1; min-width:200px;">
+        <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px;">
+          <span style="font-family:'Space Mono',monospace; font-size:1.8rem; font-weight:700; color:var(--band-color); transition:color 0.4s" id="bwValue">200 kbit/s</span>
+          <span style="font-size:0.7rem; color:var(--muted)">débit max théorique</span>
+        </div>
+        <!-- logarithmic bar across all bands -->
+        <div style="position:relative; height:28px; background:var(--bg3); border-radius:6px; overflow:hidden; margin-bottom:6px;">
+          <div id="bwBarFill" style="height:100%; border-radius:6px; background:var(--band-color); transition:width 0.5s ease, background 0.4s; width:40%"></div>
+          <!-- scale ticks -->
+          <div style="position:absolute; top:0; left:0; right:0; bottom:0; display:flex; pointer-events:none;">
+            <div style="flex:1; border-right:1px solid rgba(255,255,255,0.08)"></div>
+            <div style="flex:1; border-right:1px solid rgba(255,255,255,0.08)"></div>
+            <div style="flex:1; border-right:1px solid rgba(255,255,255,0.08)"></div>
+            <div style="flex:1; border-right:1px solid rgba(255,255,255,0.08)"></div>
+            <div style="flex:1"></div>
+          </div>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-family:'Space Mono',monospace; font-size:0.6rem; color:var(--muted);">
+          <span>1 bit/s</span><span>1 kbit/s</span><span>1 Mbit/s</span><span>1 Gbit/s</span><span>100 Gbit/s</span>
+        </div>
+      </div>
+      <div style="flex:2; min-width:220px;">
+        <p id="bwNote" style="font-size:0.82rem; color:var(--muted); line-height:1.7;"></p>
+        <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
+          <div style="background:var(--bg3); border:1px solid var(--border); border-radius:8px; padding:8px 14px; text-align:center;">
+            <div style="font-family:'Space Mono',monospace; font-size:0.75rem; color:var(--muted)">Shannon limit</div>
+            <div id="shannonVal" style="font-family:'Space Mono',monospace; font-size:0.95rem; font-weight:700; color:var(--band-color); transition:color 0.4s">~</div>
+          </div>
+          <div style="background:var(--bg3); border:1px solid var(--border); border-radius:8px; padding:8px 14px; text-align:center;">
+            <div style="font-family:'Space Mono',monospace; font-size:0.75rem; color:var(--muted)">Bande allouée typ.</div>
+            <div id="chanBwVal" style="font-family:'Space Mono',monospace; font-size:0.95rem; font-weight:700; color:var(--band-color); transition:color 0.4s">~</div>
+          </div>
+          <div style="background:var(--bg3); border:1px solid var(--border); border-radius:8px; padding:8px 14px; text-align:center;">
+            <div style="font-family:'Space Mono',monospace; font-size:0.75rem; color:var(--muted)">Débit / Hz</div>
+            <div id="specEffVal" style="font-family:'Space Mono',monospace; font-size:0.95rem; font-weight:700; color:var(--band-color); transition:color 0.4s">~</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FUN FACT -->
+<div class="funfact">
+  <div class="funfact-inner" id="funfact"></div>
+</div>
+
+<!-- PROPAGATION -->
+<div class="section-title">
+  Propagation atmosphérique
+  <small>Comment les ondes voyagent selon leur fréquence</small>
+</div>
+<div class="prop-grid">
+  <div class="prop-card" id="propGuide">
+    <h4>Guide d'onde</h4>
+    <p>VLF &lt; 30 kHz — Tour du monde</p>
+    <svg viewBox="0 0 260 120" id="svgGuide">
+      <!-- earth arc -->
+      <path d="M10,100 Q130,60 250,100" stroke="#4ade80" stroke-width="3" fill="none"/>
+      <!-- ionosphere arc -->
+      <path d="M10,30 Q130,0 250,30" stroke="#60a5fa" stroke-width="1.5" fill="none" stroke-dasharray="4,3" opacity="0.6"/>
+      <text x="200" y="18" fill="#60a5fa" font-size="9" font-family="Space Grotesk" opacity="0.7">Ionosphère</text>
+      <text x="100" y="115" fill="#4ade80" font-size="9" font-family="Space Grotesk">Terre</text>
+      <!-- wave path following earth curve -->
+      <path id="guideWave" d="M20,65 Q130,35 240,65" stroke="#a78bfa" stroke-width="2" fill="none"/>
+      <circle id="guideDot" cx="20" cy="65" r="4" fill="#a78bfa"/>
+    </svg>
+  </div>
+  <div class="prop-card" id="propBounce">
+    <h4>Rebond ionosphérique</h4>
+    <p>HF 3–30 MHz — 5000 km par saut</p>
+    <svg viewBox="0 0 260 120" id="svgBounce">
+      <path d="M10,105 Q130,80 250,105" stroke="#4ade80" stroke-width="3" fill="none"/>
+      <path d="M10,25 Q130,5 250,25" stroke="#60a5fa" stroke-width="1.5" fill="none" stroke-dasharray="4,3" opacity="0.6"/>
+      <text x="200" y="18" fill="#60a5fa" font-size="9" font-family="Space Grotesk" opacity="0.7">Ionosphère</text>
+      <!-- bounces -->
+      <path d="M30,100 L80,22 L130,100 L180,22 L230,100" stroke="#fbbf24" stroke-width="2" fill="none" stroke-linejoin="round"/>
+      <circle id="bounceDot" cx="30" cy="100" r="4" fill="#fbbf24"/>
+    </svg>
+  </div>
+  <div class="prop-card" id="propLos">
+    <h4>Ligne de vue</h4>
+    <p>VHF+ &gt; 30 MHz — Portée limitée</p>
+    <svg viewBox="0 0 260 120" id="svgLos">
+      <path d="M10,105 Q130,80 250,105" stroke="#4ade80" stroke-width="3" fill="none"/>
+      <path d="M10,25 Q130,5 250,25" stroke="#60a5fa" stroke-width="1.5" fill="none" stroke-dasharray="4,3" opacity="0.6"/>
+      <!-- straight arrow, then through iono -->
+      <line x1="30" y1="98" x2="200" y2="20" stroke="#f97316" stroke-width="2"/>
+      <polygon points="200,20 192,26 198,14" fill="#f97316"/>
+      <!-- tower icon -->
+      <line x1="30" y1="98" x2="30" y2="78" stroke="#4ade80" stroke-width="2"/>
+      <line x1="25" y1="82" x2="35" y2="82" stroke="#4ade80" stroke-width="2"/>
+      <circle id="losDot" cx="30" cy="98" r="4" fill="#f97316"/>
+      <text x="195" y="15" fill="#f97316" font-size="8" font-family="Space Grotesk">Satellite/Espace</text>
+    </svg>
+  </div>
+</div>
+
+<!-- DIFFRACTION -->
+<div class="section-title">
+  Diffraction — les murs résistent-ils ?
+  <small>La fréquence actuelle du slider détermine le comportement</small>
+</div>
+<div class="diffraction-section">
+  <div class="diff-container">
+    <canvas id="diffCanvas"></canvas>
+    <div class="diff-info">
+      <h4 id="diffTitle">Légère diffraction</h4>
+      <p id="diffDesc">À cette fréquence, l'onde contourne partiellement les obstacles. La longueur d'onde est comparable à la taille du mur.</p>
+      <div class="diff-meter">
+        <div class="diff-meter-label">
+          <span>Pénétration à travers le mur</span>
+          <span id="diffPct">50%</span>
+        </div>
+        <div class="diff-bar"><div class="diff-bar-fill" id="diffBarFill" style="width:50%; background:#eab308"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- OBSTACLES COMPARATOR -->
+<div class="section-title">
+  Atténuation par matériau
+  <small>Perte de signal (dB) pour la fréquence sélectionnée</small>
+</div>
+<div class="obstacles-section">
+  <div class="obstacles-grid">
+    <div class="obstacle-card">
+      <h5>Air libre</h5>
+      <div class="mat-icon">🌤️</div>
+      <div class="obstacle-db" id="db-air">0 dB</div>
+      <div class="obstacle-db-label">atténuation</div>
+      <div class="attn-bar"><div class="attn-bar-fill" id="bar-air" style="width:0%"></div></div>
+    </div>
+    <div class="obstacle-card">
+      <h5>Verre / bois</h5>
+      <div class="mat-icon">🪵</div>
+      <div class="obstacle-db" id="db-wood">-3 dB</div>
+      <div class="obstacle-db-label">atténuation</div>
+      <div class="attn-bar"><div class="attn-bar-fill" id="bar-wood" style="width:10%"></div></div>
+    </div>
+    <div class="obstacle-card">
+      <h5>Béton / brique</h5>
+      <div class="mat-icon">🧱</div>
+      <div class="obstacle-db" id="db-concrete">-12 dB</div>
+      <div class="obstacle-db-label">atténuation</div>
+      <div class="attn-bar"><div class="attn-bar-fill" id="bar-concrete" style="width:40%"></div></div>
+    </div>
+    <div class="obstacle-card">
+      <h5>Métal / cage</h5>
+      <div class="mat-icon">⚙️</div>
+      <div class="obstacle-db" id="db-metal">-40 dB</div>
+      <div class="obstacle-db-label">atténuation</div>
+      <div class="attn-bar"><div class="attn-bar-fill" id="bar-metal" style="width:80%"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- FULL SPECTRUM BAR -->
+<div class="section-title">
+  Le spectre complet
+  <small>Clique pour téléporter le slider</small>
+</div>
+<div class="spectrum-bar-section">
+  <div class="spectrum-bar-wrap" id="spectrumBar">
+    <div class="spectrum-bar-bg" id="spectrumBg"></div>
+    <div class="spectrum-cursor" id="spectrumCursor"></div>
+  </div>
+  <div class="spectrum-band-labels">
+    <span>VLF</span><span>LF</span><span>MF</span><span>HF</span><span>VHF</span><span>UHF</span><span>SHF</span><span>EHF</span>
+  </div>
+</div>
+
+<!-- ACCORDION -->
+<div class="section-title">Toutes les bandes</div>
+<div class="accordion-section" id="accordion"></div>
+
+<footer>
+  <span>Toutes les fréquences sont publiques</span> — seule leur utilisation est réglementée · Radio Spectrum Explorer
+</footer>
+
+<script>
+// ═══════════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════════
+const BANDS = [
+  {
+    name: 'VLF', full: 'Very Low Frequency',
+    fMin: 0, fMax: 30e3,
+    color: '#8b5cf6',
+    usages: [
+      { icon: 'submarine', label: 'Sous-marins' },
+      { icon: 'military', label: 'Militaire' },
+      { icon: 'nav', label: 'Navigation' },
+      { icon: 'clock', label: 'Horloge atomique' },
+    ],
+    badges: [
+      { cls: 'green', text: 'Pénètre les murs', icon: 'wall-pass' },
+      { cls: 'blue', text: 'Guide d\'onde Terre-Ionosphère', icon: 'wave' },
+      { cls: 'green', text: 'Portée : Tour du monde', icon: 'globe' },
+      { cls: 'yellow', text: 'Pénètre l\'eau de mer (quelques m)', icon: 'water' },
+    ],
+    range: 100,
+    prop: 'guide',
+    funfact: 'Un émetteur VLF de <span>1 mégawatt</span> peut envoyer des ordres à un sous-marin à l\'autre bout de la planète. L\'antenne fait plusieurs kilomètres de long.',
+    desc: 'La bande des communications sous-marines militaires. Les ondes VLF se propagent dans le guide d\'onde naturel formé entre la surface terrestre et la basse ionosphère.',
+    tags: ['Sous-marins', 'OMEGA', 'ALPHA', 'SAQ Grimeton', 'DCF77'],
+    obstacles: { wood: 1, concrete: 2, metal: 30 },
+    diffPct: 95,
+    diffTitle: 'Quasi-transparente',
+    diffDesc: 'À 20 kHz, la longueur d\'onde est de 15 km. Le mur (20 cm) est complètement invisible pour l\'onde — elle ne le "voit" même pas.',
+    bwMin: 0.00001, bwMax: 0.001, bwUnit: 'bit/s', bwNote: 'Quelques dizaines de bits/s max. Ordres ultra-simples codés (sous-marins). Pas d\'audio possible.', bwColor: '#8b5cf6',
+  },
+  {
+    name: 'LF', full: 'Low Frequency',
+    fMin: 30e3, fMax: 300e3,
+    color: '#6366f1',
+    usages: [
+      { icon: 'radio-am', label: 'Grandes ondes' },
+      { icon: 'nav', label: 'NDB aéro' },
+      { icon: 'clock', label: 'DCF77' },
+      { icon: 'ship', label: 'Maritime' },
+    ],
+    badges: [
+      { cls: 'green', text: 'Pénètre les obstacles', icon: 'wall-pass' },
+      { cls: 'blue', text: 'Onde de sol + guide d\'onde', icon: 'wave' },
+      { cls: 'green', text: 'Portée : 1000–3000 km', icon: 'globe' },
+    ],
+    range: 85,
+    prop: 'guide',
+    funfact: 'DCF77 à <span>77.5 kHz</span> (Allemagne) synchronise des millions de montres radio-pilotées en Europe avec une précision à la microseconde.',
+    desc: 'Grandes ondes AM. La BBC utilisait 198 kHz, RTL 234 kHz. LORAN-C pour la navigation maritime. NDB (Non-Directional Beacons) pour l\'atterrissage des avions.',
+    tags: ['DCF77', 'LORAN-C', 'NDB', 'Grandes ondes AM', 'DECCA'],
+    obstacles: { wood: 2, concrete: 4, metal: 35 },
+    diffPct: 88,
+    diffTitle: 'Très bonne pénétration',
+    diffDesc: 'Longueur d\'onde de 1 à 10 km. Les bâtiments sont microscopiques — l\'onde les contourne sans effort.',
+    bwMin: 0.001, bwMax: 0.1, bwUnit: 'bit/s', bwNote: 'Quelques centaines de bits/s. Synchronisation horaire (DCF77), balises de navigation. Pas de voix.', bwColor: '#6366f1',
+  },
+  {
+    name: 'MF', full: 'Medium Frequency',
+    fMin: 300e3, fMax: 3e6,
+    color: '#3b82f6',
+    usages: [
+      { icon: 'radio-am', label: 'Radio AM' },
+      { icon: 'ship', label: 'Détresse 500kHz' },
+      { icon: 'anchor', label: 'Maritime' },
+      { icon: 'beacon', label: 'NDB' },
+    ],
+    badges: [
+      { cls: 'green', text: 'Pénètre les murs (béton inclus)', icon: 'wall-pass' },
+      { cls: 'blue', text: 'Onde de sol (jour) + rebond (nuit)', icon: 'wave' },
+      { cls: 'yellow', text: 'Portée : 200 km (jour) / 3000 km (nuit)', icon: 'globe' },
+    ],
+    range: 75,
+    prop: 'bounce',
+    funfact: 'La fréquence de détresse historique <span>500 kHz</span> ("SOS en Morse") a été utilisée par le Titanic en 1912. Elle a sauvé des milliers de vies avant d\'être remplacée par le GMDSS.',
+    desc: 'Radio AM classique (ondes moyennes). En France arrêtée en 2017, mais UK, Allemagne, Amérique du Nord émettent encore. La nuit, la propagation explose : tu peux capter des stations américaines depuis Lille.',
+    tags: ['AM 630kHz', 'AM 1080kHz', 'RTL 234kHz', 'BBC 198kHz', 'Détresse 500kHz'],
+    obstacles: { wood: 3, concrete: 8, metal: 40 },
+    diffPct: 78,
+    diffTitle: 'Bonne diffraction',
+    diffDesc: 'Longueur d\'onde de 100m à 1km. Les murs classiques atténuent peu le signal — c\'est pour ça que la radio AM entre dans tous les bâtiments.',
+    bwMin: 5, bwMax: 10, bwUnit: 'kbit/s', bwNote: 'Audio mono compressé (AM = ~10 kHz de bande passante). Les stations AM utilisent ~9-10 kHz de largeur canal.', bwColor: '#3b82f6',
+  },
+  {
+    name: 'HF', full: 'High Frequency (Ondes courtes)',
+    fMin: 3e6, fMax: 30e6,
+    color: '#06b6d4',
+    usages: [
+      { icon: 'ham', label: 'Radio amateur' },
+      { icon: 'military', label: 'Armées' },
+      { icon: 'broadcast', label: 'Shortwave' },
+      { icon: 'aircraft', label: 'Aviation HF' },
+      { icon: 'sun', label: 'Dépend du soleil' },
+    ],
+    badges: [
+      { cls: 'yellow', text: 'Pénétration modérée', icon: 'wall-pass' },
+      { cls: 'blue', text: 'Rebond ionosphérique (capricieux)', icon: 'wave' },
+      { cls: 'green', text: 'Portée : jusqu\'à 5000 km par saut', icon: 'globe' },
+      { cls: 'yellow', text: 'Dépend du cycle solaire', icon: 'sun' },
+    ],
+    range: 70,
+    prop: 'bounce',
+    funfact: 'En HF, la propagation change selon les <span>taches solaires</span>. En maximum solaire (2025 !) la ionosphère est hyper-ionisée — des liaisons intercontinentales avec 10W sont possibles.',
+    desc: 'Les ondes courtes. Rebondissent sur la couche F de la ionosphère (200-400 km). Utilisées par les armées, radio amateurs, BBC World Service. La propagation dépend du soleil, de l\'heure et de la saison.',
+    tags: ['14 MHz', '7 MHz', '21 MHz', 'BBC World', 'STANAG', 'CW/SSB'],
+    obstacles: { wood: 5, concrete: 12, metal: 45 },
+    diffPct: 60,
+    diffTitle: 'Diffraction partielle',
+    diffDesc: 'Longueur d\'onde de 10 à 100m. Les bâtiments commencent à créer des ombres partielles. Un béton épais atténue significativement.',
+    bwMin: 3, bwMax: 30, bwUnit: 'kbit/s', bwNote: 'Voix SSB (~3 kHz), données RTTY/PSK31. Les armées utilisent HF pour des liaisons data jusqu\'à ~40 kbit/s (STANAG 4539).', bwColor: '#06b6d4',
+  },
+  {
+    name: 'VHF', full: 'Very High Frequency',
+    fMin: 30e6, fMax: 300e6,
+    color: '#10b981',
+    usages: [
+      { icon: 'fm', label: 'Radio FM' },
+      { icon: 'aircraft', label: 'Aviation' },
+      { icon: 'police', label: 'Police/Secours' },
+      { icon: 'ship', label: 'Marine VHF' },
+      { icon: 'tv', label: 'TNT / TV' },
+    ],
+    badges: [
+      { cls: 'yellow', text: 'Atténuée par les murs épais', icon: 'wall' },
+      { cls: 'red', text: 'Ligne de vue — pas de rebond', icon: 'los' },
+      { cls: 'yellow', text: 'Portée : 50–200 km', icon: 'globe' },
+    ],
+    range: 45,
+    prop: 'los',
+    funfact: 'La radio FM (87–108 MHz) utilise les <span>réflexions des bâtiments</span> en ville. C\'est pourquoi la qualité varie selon l\'endroit — l\'onde arrive de plusieurs directions à la fois (multi-trajet).',
+    desc: 'FM radio, aviation (118-137 MHz), marine VHF, balises NOAA, météo aéronautique, TNT (470-790 MHz). Ligne de vue principalement mais la diffraction en basse VHF reste utile.',
+    tags: ['FM 87-108 MHz', 'Aviation 118 MHz', 'Marine 156 MHz', 'NOAA WX', 'DAB+'],
+    obstacles: { wood: 4, concrete: 12, metal: 50 },
+    diffPct: 45,
+    diffTitle: 'Diffraction faible',
+    diffDesc: 'Longueur d\'onde de 1 à 10m. Les obstacles commencent à être problématiques. Les bâtiments créent des zones d\'ombre réelles, mais la diffraction permet encore de contourner partiellement.',
+    bwMin: 200, bwMax: 1500, bwUnit: 'kbit/s', bwNote: 'Radio FM stéréo 200 kHz par canal. DAB+ ~1.5 Mbit/s. Aviation ACARS ~2.4 kbit/s. Analogique TV 8 MHz par canal.', bwColor: '#10b981',
+  },
+  {
+    name: 'UHF', full: 'Ultra High Frequency',
+    fMin: 300e6, fMax: 3e9,
+    color: '#eab308',
+    usages: [
+      { icon: 'phone', label: '4G/5G' },
+      { icon: 'wifi', label: 'WiFi 2.4GHz' },
+      { icon: 'gps', label: 'GPS 1.575G' },
+      { icon: 'bt', label: 'Bluetooth' },
+      { icon: 'aircraft', label: 'ADS-B 1090M' },
+      { icon: 'remote', label: 'Télécommandes' },
+    ],
+    badges: [
+      { cls: 'yellow', text: 'Pénètre les murs (partiellement)', icon: 'wall' },
+      { cls: 'red', text: 'Ligne de vue + réflexions', icon: 'los' },
+      { cls: 'yellow', text: 'Portée : 1–20 km', icon: 'globe' },
+    ],
+    range: 30,
+    prop: 'los',
+    funfact: 'Le GPS utilise <span>1575.42 MHz</span> (L1). Le signal vient de 20 200 km d\'altitude avec une puissance de 50W — et il arrive à ton téléphone avec une atténuation de 160 dB. C\'est l\'équivalent de chuchoter à travers la Terre.',
+    desc: 'GSM/4G/5G, WiFi 2.4GHz, GPS, Bluetooth, ADS-B aviation, télécommandes TV. La bande la plus peuplée du spectre. La 5G sub-6GHz est dans la partie haute de l\'UHF.',
+    tags: ['GPS 1575 MHz', 'ADS-B 1090 MHz', 'GSM 900/1800', '4G 2100 MHz', 'WiFi 2.4 GHz', 'BT 2.4 GHz'],
+    obstacles: { wood: 6, concrete: 18, metal: 60 },
+    diffPct: 30,
+    diffTitle: 'Faible pénétration',
+    diffDesc: 'Longueur d\'onde de 10cm à 1m. Les murs en béton atténuent fortement. C\'est pour ça qu\'un seul relais 4G en intérieur ne suffit pas — les opérateurs installent des répéteurs.',
+    bwMin: 1, bwMax: 1000, bwUnit: 'Mbit/s', bwNote: 'WiFi 2.4GHz ≈ 600 Mbit/s (WiFi 6). 4G LTE ≈ 150 Mbit/s théorique. GPS data rate = seulement 50 bit/s (signal très fin). Bluetooth ≈ 3 Mbit/s.', bwColor: '#eab308',
+  },
+  {
+    name: 'SHF', full: 'Super High Frequency (Micro-ondes)',
+    fMin: 3e9, fMax: 30e9,
+    color: '#f97316',
+    usages: [
+      { icon: 'wifi', label: 'WiFi 5/6 GHz' },
+      { icon: 'radar', label: 'Radar' },
+      { icon: 'satellite', label: 'Satellite Ku/Ka' },
+      { icon: 'microwave', label: 'Micro-ondes 2.45G' },
+      { icon: 'link', label: 'Faisceaux hertziens' },
+    ],
+    badges: [
+      { cls: 'red', text: 'Bloquée par les murs', icon: 'wall-block' },
+      { cls: 'red', text: 'Ligne de vue stricte', icon: 'los' },
+      { cls: 'red', text: 'Portée : 0.1–5 km', icon: 'globe' },
+      { cls: 'blue', text: 'Traverse la ionosphère → satellites', icon: 'satellite' },
+    ],
+    range: 15,
+    prop: 'los',
+    funfact: 'Le four micro-ondes chauffe à <span>2.45 GHz</span> car c\'est une fréquence de résonance des molécules d\'eau. Les mêmes molécules d\'eau dans l\'atmosphère absorbent les radar météo.',
+    desc: 'WiFi 5GHz/6GHz, radar aéroportuaire, faisceaux hertziens opérateurs, satellites Ku-band (10-12GHz) et Ka-band (26-40GHz). Haute bande passante mais portée très limitée.',
+    tags: ['WiFi 5 GHz', 'WiFi 6 GHz', 'Radar X-band 10GHz', 'Ku-band 12GHz', 'Ka-band 30GHz'],
+    obstacles: { wood: 10, concrete: 25, metal: 80 },
+    diffPct: 10,
+    diffTitle: 'Bloquée',
+    diffDesc: 'Longueur d\'onde de 1 à 10 cm. Les murs créent une ombre nette. Une feuille de papier d\'aluminium bloque presque complètement le signal WiFi 5GHz.',
+    bwMin: 1000, bwMax: 10000, bwUnit: 'Mbit/s', bwNote: 'WiFi 5GHz (802.11ac) ≈ 3.5 Gbit/s théorique. WiFi 6E (6GHz) ≈ 9.6 Gbit/s. Radar bande X ≈ 100 MHz BW. Liaisons micro-ondes opérateurs ≈ 1 Gbit/s.', bwColor: '#f97316',
+  },
+  {
+    name: 'EHF', full: 'Extremely High Frequency (mmWave)',
+    fMin: 30e9, fMax: 300e9,
+    color: '#ef4444',
+    usages: [
+      { icon: 'phone', label: '5G mmWave' },
+      { icon: 'telescope', label: 'Astronomie' },
+      { icon: 'scanner', label: 'Sécurité aéroport' },
+      { icon: 'medical', label: 'Imagerie médicale' },
+      { icon: 'radar', label: 'Radar 77GHz auto' },
+    ],
+    badges: [
+      { cls: 'red', text: 'Bloquée par tout obstacle', icon: 'wall-block' },
+      { cls: 'red', text: 'Ligne de vue absolue', icon: 'los' },
+      { cls: 'red', text: 'Portée : 100–300 m', icon: 'globe' },
+      { cls: 'red', text: 'Absorbée par la pluie et l\'humidité', icon: 'rain' },
+    ],
+    range: 5,
+    prop: 'los',
+    funfact: 'La pluie atténue les ondes <span>mmWave</span> à plus de 10 dB/km à 77 GHz. C\'est pourquoi la 5G mmWave est quasi inutilisable en extérieur par temps de pluie et nécessite une antenne tous les 200m.',
+    desc: 'Ondes millimétriques. 5G mmWave (28GHz, 39GHz), radars anticollision automobiles (77GHz), scanners de sécurité aéroport (94GHz), radio-astronomie. Débit énorme, portée infime.',
+    tags: ['5G 28 GHz', '5G 39 GHz', 'Radar auto 77 GHz', 'Scanner 94 GHz', 'W-band 75-110GHz'],
+    obstacles: { wood: 20, concrete: 40, metal: 95 },
+    diffPct: 2,
+    diffTitle: 'Aucune pénétration',
+    diffDesc: 'Longueur d\'onde de 1 à 10 mm. Une main suffit à bloquer complètement le signal. Les scanners d\'aéroport exploitent justement cette réflexion pour "voir" sous les vêtements.',
+    bwMin: 5000, bwMax: 100000, bwUnit: 'Mbit/s', bwNote: '5G mmWave ≈ 20 Gbit/s théorique sur 800 MHz de bande. Potentiel énorme mais portée infime — compromis incontournable.', bwColor: '#ef4444',
+  },
+];
+
+// SVG icons
+const ICONS = {
+  submarine: `<svg viewBox="0 0 28 28" fill="none"><ellipse cx="14" cy="15" rx="10" ry="5" stroke="currentColor" stroke-width="1.5"/><rect x="11" y="9" width="4" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/><line x1="4" y1="15" x2="1" y2="15" stroke="currentColor" stroke-width="1.5"/><line x1="24" y1="15" x2="27" y2="15" stroke="currentColor" stroke-width="1.5"/></svg>`,
+  military: `<svg viewBox="0 0 28 28" fill="none"><polygon points="14,4 24,20 4,20" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><line x1="14" y1="10" x2="14" y2="16" stroke="currentColor" stroke-width="1.5"/><circle cx="14" cy="18" r="1" fill="currentColor"/></svg>`,
+  nav: `<svg viewBox="0 0 28 28" fill="none"><circle cx="14" cy="14" r="9" stroke="currentColor" stroke-width="1.5"/><line x1="14" y1="5" x2="14" y2="23" stroke="currentColor" stroke-width="1"/><line x1="5" y1="14" x2="23" y2="14" stroke="currentColor" stroke-width="1"/><circle cx="14" cy="14" r="2" fill="currentColor"/></svg>`,
+  clock: `<svg viewBox="0 0 28 28" fill="none"><circle cx="14" cy="14" r="9" stroke="currentColor" stroke-width="1.5"/><line x1="14" y1="8" x2="14" y2="14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="14" y1="14" x2="19" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`,
+  'radio-am': `<svg viewBox="0 0 28 28" fill="none"><rect x="4" y="12" width="20" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><circle cx="18" cy="18" r="3" stroke="currentColor" stroke-width="1.5"/><line x1="8" y1="12" x2="5" y2="5" stroke="currentColor" stroke-width="1.5"/><line x1="14" y1="12" x2="14" y2="6" stroke="currentColor" stroke-width="1.5"/></svg>`,
+  ship: `<svg viewBox="0 0 28 28" fill="none"><path d="M4,18 L14,8 L24,18 L22,22 L6,22 Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><line x1="14" y1="8" x2="14" y2="4" stroke="currentColor" stroke-width="1.5"/><line x1="10" y1="22" x2="18" y2="22" stroke="currentColor" stroke-width="1.5"/></svg>`,
+  anchor: `<svg viewBox="0 0 28 28" fill="none"><circle cx="14" cy="8" r="3" stroke="currentColor" stroke-width="1.5"/><line x1="14" y1="11" x2="14" y2="22" stroke="currentColor" stroke-width="1.5"/><path d="M7,16 Q14,24 21,16" stroke="currentColor" stroke-width="1.5" fill="none"/><line x1="11" y1="13" x2="17" y2="13" stroke="currentColor" stroke-width="1.5"/></svg>`,
+  beacon: `<svg viewBox="0 0 28 28" fill="none"><line x1="14" y1="22" x2="14" y2="10" stroke="currentColor" stroke-width="2"/><path d="M9,15 Q14,8 19,15" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M6,19 Q14,7 22,19" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.5"/></svg>`,
+  ham: `<svg viewBox="0 0 28 28" fill="none"><rect x="6" y="14" width="16" height="9" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M10,14 Q10,7 14,7 Q18,7 18,14" stroke="currentColor" stroke-width="1.5" fill="none"/><circle cx="14" cy="18" r="2" stroke="currentColor" stroke-width="1.5"/></svg>`,
+  broadcast: `<svg viewBox="0 0 28 28" fill="none"><circle cx="14" cy="14" r="3" fill="currentColor"/><path d="M8,20 Q5,14 8,8" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M20,20 Q23,14 20,8" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M5,23 Q0,14 5,5" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.4"/><path d="M23,23 Q28,14 23,5" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.4"/></svg>`,
+  aircraft: `<svg viewBox="0 0 28 28" fill="none"><path d="M14,4 L18,12 L26,12 L22,16 L24,24 L14,20 L4,24 L6,16 L2,12 L10,12 Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>`,
+  sun: `<svg viewBox="0 0 28 28" fill="none"><circle cx="14" cy="14" r="5" stroke="currentColor" stroke-width="1.5"/><line x1="14" y1="2" x2="14" y2="5" stroke="currentColor" stroke-width="1.5"/><line x1="14" y1="23" x2="14" y2="26" stroke="currentColor" stroke-width="1.5"/><line x1="2" y1="14" x2="5" y2="14" stroke="currentColor" stroke-width="1.5"/><line x1="23" y1="14" x2="26" y2="14" stroke="currentColor" stroke-width="1.5"/><line x1="5.5" y1="5.5" x2="7.6" y2="7.6" stroke="currentColor" stroke-width="1.5"/><line x1="20.4" y1="20.4" x2="22.5" y2="22.5" stroke="currentColor" stroke-width="1.5"/><line x1="22.5" y1="5.5" x2="20.4" y2="7.6" stroke="currentColor" stroke-width="1.5"/><line x1="7.6" y1="20.4" x2="5.5" y2="22.5" stroke="currentColor" stroke-width="1.5"/></svg>`,
+  fm: `<svg viewBox="0 0 28 28" fill="none"><path d="M3,14 Q7,6 14,14 Q21,22 25,14" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="14" cy="14" r="2" fill="currentColor"/></svg>`,
+  police: `<svg viewBox="0 0 28 28" fill="none"><rect x="6" y="10" width="16" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M10,10 L10,7 Q14,4 18,7 L18,10" stroke="currentColor" stroke-width="1.5" fill="none"/><line x1="11" y1="16" x2="17" y2="16" stroke="currentColor" stroke-width="2"/><line x1="14" y1="13" x2="14" y2="19" stroke="currentColor" stroke-width="2"/></svg>`,
+  tv: `<svg viewBox="0 0 28 28" fill="none"><rect x="4" y="8" width="20" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/><line x1="10" y1="24" x2="18" y2="24" stroke="currentColor" stroke-width="2"/><line x1="8" y1="5" x2="12" y2="8" stroke="currentColor" stroke-width="1.5"/><line x1="20" y1="5" x2="16" y2="8" stroke="currentColor" stroke-width="1.5"/></svg>`,
+  phone: `<svg viewBox="0 0 28 28" fill="none"><rect x="8" y="3" width="12" height="22" rx="3" stroke="currentColor" stroke-width="1.5"/><circle cx="14" cy="21" r="1.5" stroke="currentColor" stroke-width="1"/><line x1="11" y1="6" x2="17" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`,
+  wifi: `<svg viewBox="0 0 28 28" fill="none"><path d="M5,13 Q14,5 23,13" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M8,17 Q14,11 20,17" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M11,21 Q14,17 17,21" stroke="currentColor" stroke-width="1.5" fill="none"/><circle cx="14" cy="23" r="1.5" fill="currentColor"/></svg>`,
+  gps: `<svg viewBox="0 0 28 28" fill="none"><circle cx="14" cy="12" r="5" stroke="currentColor" stroke-width="1.5"/><line x1="14" y1="17" x2="14" y2="24" stroke="currentColor" stroke-width="1.5"/><line x1="3" y1="12" x2="8" y2="12" stroke="currentColor" stroke-width="1.5"/><line x1="20" y1="12" x2="25" y2="12" stroke="currentColor" stroke-width="1.5"/><circle cx="14" cy="12" r="2" fill="currentColor"/></svg>`,
+  bt: `<svg viewBox="0 0 28 28" fill="none"><polyline points="10,8 18,14 10,20" stroke="currentColor" stroke-width="1.5" fill="none"/><polyline points="18,8 10,14 18,20" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>`,
+  remote: `<svg viewBox="0 0 28 28" fill="none"><rect x="9" y="4" width="10" height="20" rx="4" stroke="currentColor" stroke-width="1.5"/><circle cx="14" cy="11" r="2" stroke="currentColor" stroke-width="1.5"/><line x1="11" y1="16" x2="17" y2="16" stroke="currentColor" stroke-width="1.5"/><line x1="11" y1="19" x2="17" y2="19" stroke="currentColor" stroke-width="1.5"/></svg>`,
+  radar: `<svg viewBox="0 0 28 28" fill="none"><circle cx="14" cy="14" r="10" stroke="currentColor" stroke-width="1" opacity="0.4"/><circle cx="14" cy="14" r="6" stroke="currentColor" stroke-width="1" opacity="0.6"/><circle cx="14" cy="14" r="2" fill="currentColor"/><line x1="14" y1="14" x2="20" y2="8" stroke="currentColor" stroke-width="2"/></svg>`,
+  satellite: `<svg viewBox="0 0 28 28" fill="none"><rect x="11" y="11" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/><line x1="4" y1="14" x2="11" y2="14" stroke="currentColor" stroke-width="2"/><line x1="17" y1="14" x2="24" y2="14" stroke="currentColor" stroke-width="2"/><rect x="2" y="11" width="2" height="6" rx="1" stroke="currentColor" stroke-width="1"/><rect x="24" y="11" width="2" height="6" rx="1" stroke="currentColor" stroke-width="1"/><line x1="14" y1="4" x2="14" y2="11" stroke="currentColor" stroke-width="1.5"/></svg>`,
+  microwave: `<svg viewBox="0 0 28 28" fill="none"><rect x="3" y="7" width="22" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/><rect x="5" y="9" width="14" height="10" rx="1" stroke="currentColor" stroke-width="1"/><circle cx="22" cy="13" r="1" fill="currentColor"/><circle cx="22" cy="17" r="1" fill="currentColor"/></svg>`,
+  link: `<svg viewBox="0 0 28 28" fill="none"><path d="M10,18 L5,22" stroke="currentColor" stroke-width="2"/><path d="M18,10 L23,6" stroke="currentColor" stroke-width="2"/><path d="M8,12 Q14,8 20,12 Q14,16 8,12" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>`,
+  telescope: `<svg viewBox="0 0 28 28" fill="none"><line x1="8" y1="20" x2="20" y2="8" stroke="currentColor" stroke-width="2"/><ellipse cx="18" cy="10" rx="4" ry="2" transform="rotate(-45 18 10)" stroke="currentColor" stroke-width="1.5"/><line x1="14" y1="20" x2="14" y2="25" stroke="currentColor" stroke-width="2"/><line x1="10" y1="25" x2="18" y2="25" stroke="currentColor" stroke-width="2"/></svg>`,
+  scanner: `<svg viewBox="0 0 28 28" fill="none"><rect x="4" y="8" width="20" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><line x1="4" y1="14" x2="24" y2="14" stroke="currentColor" stroke-width="2" stroke-dasharray="3,2"/><circle cx="14" cy="14" r="3" stroke="currentColor" stroke-width="1.5"/></svg>`,
+  medical: `<svg viewBox="0 0 28 28" fill="none"><rect x="6" y="6" width="16" height="16" rx="3" stroke="currentColor" stroke-width="1.5"/><line x1="14" y1="10" x2="14" y2="18" stroke="currentColor" stroke-width="2"/><line x1="10" y1="14" x2="18" y2="14" stroke="currentColor" stroke-width="2"/></svg>`,
+};
+
+// ═══════════════════════════════════════════════════
+// LOGIC
+// ═══════════════════════════════════════════════════
+const slider = document.getElementById('freqSlider');
+
+// log scale: 0→1000 maps to 3Hz→300GHz
+function sliderToFreq(v) {
+  const logMin = Math.log10(3);
+  const logMax = Math.log10(300e9);
+  return Math.pow(10, logMin + (v / 1000) * (logMax - logMin));
+}
+function freqToSlider(f) {
+  const logMin = Math.log10(3);
+  const logMax = Math.log10(300e9);
+  return ((Math.log10(f) - logMin) / (logMax - logMin)) * 1000;
+}
+
+function formatFreq(f) {
+  if (f >= 1e9) return (f/1e9).toPrecision(3).replace(/\.?0+$/, '') + ' GHz';
+  if (f >= 1e6) return (f/1e6).toPrecision(3).replace(/\.?0+$/, '') + ' MHz';
+  if (f >= 1e3) return (f/1e3).toPrecision(3).replace(/\.?0+$/, '') + ' kHz';
+  return f.toPrecision(3).replace(/\.?0+$/, '') + ' Hz';
+}
+function formatWavelength(f) {
+  const c = 3e8;
+  const wl = c / f;
+  if (wl >= 1e3) return (wl/1e3).toFixed(1) + ' km';
+  if (wl >= 1) return wl.toFixed(2) + ' m';
+  if (wl >= 0.01) return (wl*100).toFixed(1) + ' cm';
+  return (wl*1000).toFixed(1) + ' mm';
+}
+
+function getBand(f) {
+  return BANDS.find(b => f >= b.fMin && f < b.fMax) || (f < BANDS[0].fMin ? BANDS[0] : BANDS[BANDS.length-1]);
+}
+
+// ── Wave Canvas ──
+const waveCanvas = document.getElementById('waveCanvas');
+const wctx = waveCanvas.getContext('2d');
+let wavePhase = 0;
+let currentFreq = sliderToFreq(617);
+
+function resizeCanvas() {
+  waveCanvas.width = waveCanvas.offsetWidth * window.devicePixelRatio;
+  waveCanvas.height = waveCanvas.offsetHeight * window.devicePixelRatio;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+function drawWave(freq, color) {
+  const w = waveCanvas.width;
+  const h = waveCanvas.height;
+  wctx.clearRect(0, 0, w, h);
+
+  const logMin = Math.log10(3);
+  const logMax = Math.log10(300e9);
+  const t = (Math.log10(freq) - logMin) / (logMax - logMin);
+
+  // cycles visible: 1 at VLF, ~20 at EHF
+  const cycles = 1 + t * 19;
+  const amp = h * 0.33;
+  const cy = h / 2;
+
+  // background grid
+  wctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  wctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = cy - amp + (i * amp * 2 / 4);
+    wctx.beginPath(); wctx.moveTo(0, y); wctx.lineTo(w, y); wctx.stroke();
+  }
+
+  // center line
+  wctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  wctx.beginPath(); wctx.moveTo(0, cy); wctx.lineTo(w, cy); wctx.stroke();
+
+  // wave
+  wctx.beginPath();
+  wctx.strokeStyle = color;
+  wctx.lineWidth = 2.5 * window.devicePixelRatio;
+  wctx.shadowColor = color;
+  wctx.shadowBlur = 8;
+
+  for (let x = 0; x <= w; x++) {
+    const phase = (x / w) * cycles * Math.PI * 2 - wavePhase;
+    const y = cy + Math.sin(phase) * amp;
+    x === 0 ? wctx.moveTo(x, y) : wctx.lineTo(x, y);
+  }
+  wctx.stroke();
+  wctx.shadowBlur = 0;
+
+  // wavelength annotation
+  const oneCycleWidth = w / cycles;
+  if (oneCycleWidth > 40) {
+    const startX = oneCycleWidth * 0.1;
+    const endX = startX + oneCycleWidth;
+    wctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    wctx.lineWidth = 1;
+    wctx.setLineDash([3,3]);
+    wctx.beginPath(); wctx.moveTo(startX, cy - amp - 15); wctx.lineTo(startX, cy + amp + 15); wctx.stroke();
+    wctx.beginPath(); wctx.moveTo(endX, cy - amp - 15); wctx.lineTo(endX, cy + amp + 15); wctx.stroke();
+    wctx.setLineDash([]);
+    wctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    wctx.beginPath(); wctx.moveTo(startX, cy - amp - 10); wctx.lineTo(endX, cy - amp - 10); wctx.stroke();
+    wctx.fillStyle = 'rgba(255,255,255,0.5)';
+    wctx.font = `${11 * window.devicePixelRatio}px Space Mono`;
+    wctx.textAlign = 'center';
+    wctx.fillText('λ = ' + formatWavelength(freq), (startX + endX) / 2, cy - amp - 18);
+  }
+}
+
+// ── Diffraction Canvas ──
+const diffCanvas = document.getElementById('diffCanvas');
+const dctx = diffCanvas.getContext('2d');
+
+function resizeDiff() {
+  diffCanvas.width = diffCanvas.offsetWidth * window.devicePixelRatio;
+  diffCanvas.height = diffCanvas.offsetHeight * window.devicePixelRatio;
+}
+resizeDiff();
+window.addEventListener('resize', resizeDiff);
+
+let diffPhase = 0;
+function drawDiff(freq, color, pct) {
+  const w = diffCanvas.width;
+  const h = diffCanvas.height;
+  dctx.clearRect(0, 0, w, h);
+
+  const wallX = w * 0.45;
+  const wallThick = w * 0.04;
+  const gapSize = h * 0.3;
+  const gapY = (h - gapSize) / 2;
+
+  // incoming waves (left side)
+  const t = (Math.log10(freq) - Math.log10(3)) / (Math.log10(300e9) - Math.log10(3));
+  const spacing = 30 + (1-t) * 60;
+  dctx.strokeStyle = color;
+  dctx.lineWidth = 1.5;
+  dctx.globalAlpha = 0.5;
+  for (let i = 0; i < 8; i++) {
+    const x = (i * spacing - diffPhase * spacing * 0.3) % (wallX + 20) - 10;
+    if (x < 0 || x > wallX) continue;
+    dctx.beginPath();
+    dctx.moveTo(x, 0); dctx.lineTo(x, h);
+    dctx.stroke();
+  }
+  dctx.globalAlpha = 1;
+
+  // wall
+  dctx.fillStyle = '#1e2030';
+  dctx.strokeStyle = '#4a4a6a';
+  dctx.lineWidth = 1;
+  dctx.beginPath();
+  dctx.rect(wallX, 0, wallThick, gapY);
+  dctx.fill(); dctx.stroke();
+  dctx.beginPath();
+  dctx.rect(wallX, gapY + gapSize, wallThick, h - gapY - gapSize);
+  dctx.fill(); dctx.stroke();
+
+  // transmitted waves (right side)
+  if (pct > 5) {
+    const alpha = pct / 100;
+    const rightX = wallX + wallThick;
+    const spread = pct / 100; // 1 = full spread (diffraction), 0 = beam
+
+    dctx.strokeStyle = color;
+    dctx.globalAlpha = alpha * 0.7;
+
+    if (spread > 0.5) {
+      // diffraction: circular waves from gap
+      const cx = wallX + wallThick;
+      const cy = h / 2;
+      for (let i = 0; i < 5; i++) {
+        const r = ((i * spacing * 0.8 + diffPhase * spacing * 0.3) % (w - rightX + 50));
+        if (r < 0) continue;
+        dctx.beginPath();
+        dctx.arc(cx, cy, r, -Math.PI/2, Math.PI/2);
+        dctx.lineWidth = 1.5;
+        dctx.stroke();
+      }
+    } else {
+      // beam / shadow — straight waves with shadow
+      for (let i = 0; i < 6; i++) {
+        const x = rightX + (i * spacing - diffPhase * spacing * 0.3) % (w - rightX + 20);
+        if (x < rightX || x > w) continue;
+        dctx.beginPath();
+        dctx.moveTo(x, gapY); dctx.lineTo(x, gapY + gapSize);
+        dctx.lineWidth = 1.5;
+        dctx.stroke();
+      }
+      // shadow zones
+      dctx.globalAlpha = 0.05;
+      dctx.fillStyle = '#ef4444';
+      dctx.fillRect(rightX, 0, w - rightX, gapY);
+      dctx.fillRect(rightX, gapY + gapSize, w - rightX, h - gapY - gapSize);
+      dctx.globalAlpha = 0.3;
+      dctx.fillStyle = '#ef4444';
+      dctx.font = `${9 * window.devicePixelRatio}px Space Mono`;
+      dctx.textAlign = 'center';
+      dctx.fillText('OMBRE', rightX + (w - rightX)/2, h * 0.2);
+      dctx.fillText('OMBRE', rightX + (w - rightX)/2, h * 0.85);
+    }
+    dctx.globalAlpha = 1;
+  }
+
+  // gap label
+  dctx.fillStyle = 'rgba(255,255,255,0.3)';
+  dctx.font = `${9 * window.devicePixelRatio}px Space Mono`;
+  dctx.textAlign = 'center';
+  dctx.fillText('mur', wallX + wallThick/2, h - 6);
+}
+
+// ── Update UI ──
+function update(sliderVal) {
+  const freq = sliderToFreq(sliderVal);
+  currentFreq = freq;
+  const band = getBand(freq);
+  const color = band.color;
+
+  // CSS var
+  document.documentElement.style.setProperty('--band-color', color);
+
+  // freq display
+  document.getElementById('freqVal').textContent = formatFreq(freq);
+  document.getElementById('waveVal').textContent = 'λ = ' + formatWavelength(freq);
+  document.getElementById('bandName').textContent = band.name + ' — ' + band.full;
+
+  // wave meta
+  document.getElementById('waveMeta1').textContent = 'Longueur d\'onde : ' + formatWavelength(freq);
+  const cyclesLabel = freq >= 1e9 ? (freq/1e9).toPrecision(3)+' milliards/s' : freq >= 1e6 ? (freq/1e6).toPrecision(3)+' millions/s' : formatFreq(freq)+'/s';
+  document.getElementById('waveMeta2').textContent = 'Fréquence : ' + cyclesLabel;
+  document.getElementById('waveMeta3').textContent = 'Propagation : ' + (band.prop === 'guide' ? 'Guide d\'onde' : band.prop === 'bounce' ? 'Rebond ionosphérique' : 'Ligne de vue');
+
+  // usages
+  const ugrid = document.getElementById('usageGrid');
+  ugrid.innerHTML = band.usages.map(u => `
+    <div class="usage-item active" style="border-color:${color}33; background:${color}11; color:${color}">
+      ${ICONS[u.icon] || ''}
+      <span>${u.label}</span>
+    </div>
+  `).join('');
+
+  // badges
+  document.getElementById('badgesPanel').innerHTML = band.badges.map(b => `
+    <div class="badge ${b.cls}">${b.text}</div>
+  `).join('');
+
+  // range bar
+  document.getElementById('rangeBarFill').style.width = band.range + '%';
+  document.getElementById('rangeBarFill').style.background = color;
+
+  // funfact
+  document.getElementById('funfact').innerHTML = band.funfact;
+
+  // propagation highlight
+  ['propGuide','propBounce','propLos'].forEach(id => document.getElementById(id).classList.remove('active-prop'));
+  if (band.prop === 'guide') document.getElementById('propGuide').classList.add('active-prop');
+  else if (band.prop === 'bounce') document.getElementById('propBounce').classList.add('active-prop');
+  else document.getElementById('propLos').classList.add('active-prop');
+
+  // bandwidth panel
+  if (band.bwMax !== undefined) {
+    // format bw value
+    function fmtBw(v, unit) {
+      if (unit === 'bit/s') {
+        if (v < 1) return (v*1000).toFixed(2) + ' mbit/s';
+        if (v < 1000) return v.toFixed(2) + ' bit/s';
+        return (v/1000).toFixed(1) + ' kbit/s';
+      }
+      if (unit === 'kbit/s') {
+        if (v < 1000) return v.toFixed(0) + ' kbit/s';
+        return (v/1000).toFixed(1) + ' Mbit/s';
+      }
+      if (unit === 'Mbit/s') {
+        if (v < 1000) return v.toFixed(0) + ' Mbit/s';
+        return (v/1000).toFixed(1) + ' Gbit/s';
+      }
+      return v + ' ' + unit;
+    }
+    document.getElementById('bwValue').textContent = fmtBw(band.bwMin, band.bwUnit) + ' – ' + fmtBw(band.bwMax, band.bwUnit);
+    // log scale 0-100% from 1bit/s to 100Gbit/s
+    const bwInBits = band.bwUnit === 'bit/s' ? band.bwMax : band.bwUnit === 'kbit/s' ? band.bwMax * 1e3 : band.bwUnit === 'Mbit/s' ? band.bwMax * 1e6 : band.bwMax;
+    const bwPct = Math.min(100, Math.max(2, ((Math.log10(bwInBits) - Math.log10(1)) / (Math.log10(100e9) - Math.log10(1))) * 100));
+    document.getElementById('bwBarFill').style.width = bwPct + '%';
+    document.getElementById('bwBarFill').style.background = band.color;
+    document.getElementById('bwNote').textContent = band.bwNote;
+    // shannon: C = B * log2(1 + SNR), assume SNR=20dB (100) for typical radio
+    const chanBwHz = {
+      VLF: '3 kHz', LF: '270 kHz', MF: '2.7 MHz', HF: '27 MHz',
+      VHF: '270 MHz', UHF: '2.7 GHz', SHF: '27 GHz', EHF: '270 GHz'
+    }[band.name] || '?';
+    const specEff = {
+      VLF: '< 0.01', LF: '< 0.01', MF: '0.01', HF: '0.1',
+      VHF: '0.5–8', UHF: '1–10', SHF: '4–20', EHF: '5–25'
+    }[band.name] || '?';
+    const shannonEx = {
+      VLF: '~100 bit/s', LF: '~1 kbit/s', MF: '~10 kbit/s', HF: '~100 kbit/s',
+      VHF: '~1 Gbit/s', UHF: '~10 Gbit/s', SHF: '~100 Gbit/s', EHF: '~1 Tbit/s'
+    }[band.name] || '?';
+    document.getElementById('shannonVal').textContent = shannonEx;
+    document.getElementById('chanBwVal').textContent = chanBwHz;
+    document.getElementById('specEffVal').textContent = specEff + ' bit/s/Hz';
+    ['bwValue','shannonVal','chanBwVal','specEffVal'].forEach(id => {
+      document.getElementById(id).style.color = band.color;
+    });
+  }
+
+  // diffraction
+  const diffPct = band.diffPct;
+  document.getElementById('diffTitle').textContent = band.diffTitle;
+  document.getElementById('diffDesc').textContent = band.diffDesc;
+  document.getElementById('diffPct').textContent = diffPct + '%';
+  const dfill = document.getElementById('diffBarFill');
+  dfill.style.width = diffPct + '%';
+  dfill.style.background = diffPct > 70 ? '#10b981' : diffPct > 35 ? '#eab308' : '#ef4444';
+
+  // obstacles
+  const o = band.obstacles;
+  function setObs(id, barId, db, maxDb) {
+    document.getElementById(id).textContent = '-' + db + ' dB';
+    document.getElementById(id).style.color = db < 5 ? '#10b981' : db < 20 ? '#eab308' : '#ef4444';
+    document.getElementById(barId).style.width = Math.min(100, (db / maxDb) * 100) + '%';
+  }
+  document.getElementById('db-air').textContent = '0 dB';
+  document.getElementById('db-air').style.color = '#10b981';
+  setObs('db-wood', 'bar-wood', o.wood, 30);
+  setObs('db-concrete', 'bar-concrete', o.concrete, 50);
+  setObs('db-metal', 'bar-metal', o.metal, 100);
+
+  // spectrum cursor
+  const pct = sliderVal / 1000;
+  const sc = document.getElementById('spectrumCursor');
+  const sbg = document.getElementById('spectrumBg');
+  sc.style.left = (pct * sbg.offsetWidth) + 'px';
+}
+
+// ── Animation loop ──
+let lastTime = 0;
+function animate(ts) {
+  const dt = (ts - lastTime) / 1000;
+  lastTime = ts;
+  const band = getBand(currentFreq);
+  const t = (Math.log10(currentFreq) - Math.log10(3)) / (Math.log10(300e9) - Math.log10(3));
+  const speed = 1 + t * 15;
+  wavePhase += speed * dt * Math.PI * 2;
+  diffPhase += dt * 0.5;
+
+  // propagation dots
+  animatePropDots(ts);
+
+  drawWave(currentFreq, band.color);
+  drawDiff(currentFreq, band.color, band.diffPct);
+  requestAnimationFrame(animate);
+}
+
+// prop dots
+let guidePct = 0, bouncePct = 0, losPct = 0;
+function animatePropDots(ts) {
+  guidePct = (guidePct + 0.003) % 1;
+  bouncePct = (bouncePct + 0.005) % 1;
+  losPct = (losPct + 0.006) % 1;
+
+  // guide dot along arc
+  const gd = document.getElementById('guideDot');
+  const gx = 20 + guidePct * 220;
+  const gy = 65 + Math.sin(guidePct * Math.PI) * (-30);
+  gd.setAttribute('cx', gx); gd.setAttribute('cy', gy);
+
+  // bounce dot
+  const bd = document.getElementById('bounceDot');
+  const bSegs = [
+    [30,100,80,22],[80,22,130,100],[130,100,180,22],[180,22,230,100]
+  ];
+  const bTotal = bouncePct * 4;
+  const bSeg = Math.min(3, Math.floor(bTotal));
+  const bFrac = bTotal - bSeg;
+  const bs = bSegs[bSeg];
+  bd.setAttribute('cx', bs[0] + (bs[2]-bs[0]) * bFrac);
+  bd.setAttribute('cy', bs[1] + (bs[3]-bs[1]) * bFrac);
+
+  // los dot
+  const ld = document.getElementById('losDot');
+  ld.setAttribute('cx', 30 + losPct * 170);
+  ld.setAttribute('cy', 98 - losPct * 78);
+}
+
+// ── Accordion ──
+const acc = document.getElementById('accordion');
+acc.innerHTML = BANDS.map((b, i) => `
+  <div class="accordion-item" id="acc-${i}">
+    <div class="accordion-header" onclick="toggleAcc(${i})">
+      <div class="acc-dot" style="background:${b.color}"></div>
+      <span class="acc-name">${b.name} — ${b.full}</span>
+      <span class="acc-range">${formatFreq(b.fMin)} – ${formatFreq(b.fMax)}</span>
+      <span class="acc-chevron">▼</span>
+    </div>
+    <div class="accordion-body">
+      <p>${b.desc}</p>
+      <div class="acc-tags">${b.tags.map(t => `<span class="acc-tag">${t}</span>`).join('')}</div>
+    </div>
+  </div>
+`).join('');
+
+function toggleAcc(i) {
+  const el = document.getElementById('acc-'+i);
+  el.classList.toggle('open');
+}
+
+// ── Spectrum bar click ──
+document.getElementById('spectrumBg').addEventListener('click', function(e) {
+  const rect = this.getBoundingClientRect();
+  const pct = (e.clientX - rect.left) / rect.width;
+  const val = Math.round(pct * 1000);
+  slider.value = val;
+  update(val);
+});
+
+// ── Slider markers ──
+const markers = [
+  { f: 77.5e3, label: 'DCF77' },
+  { f: 1.575e6, label: 'AM nuit' },
+  { f: 10e6, label: 'HF DX' },
+  { f: 98e6, label: 'FM' },
+  { f: 121.5e6, label: 'Aviation' },
+  { f: 156e6, label: 'Marine' },
+  { f: 406e6, label: 'SARSAT' },
+  { f: 1090e6, label: 'ADS-B' },
+  { f: 1575e6, label: 'GPS' },
+  { f: 2400e6, label: 'WiFi 2.4G' },
+  { f: 5800e6, label: 'WiFi 5G' },
+  { f: 28e9, label: '5G mmW' },
+];
+const sbg = document.getElementById('spectrumBg');
+markers.forEach(m => {
+  const pct = freqToSlider(m.f) / 1000;
+  const div = document.createElement('div');
+  div.className = 'spectrum-marker';
+  div.style.left = (pct * 100) + '%';
+  div.textContent = m.label;
+  sbg.appendChild(div);
+});
+
+// ── Init ──
+slider.addEventListener('input', e => update(parseInt(e.target.value)));
+update(parseInt(slider.value));
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>
